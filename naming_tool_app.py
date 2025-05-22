@@ -22,24 +22,26 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- Session State Initialization ---
-if "reset" not in st.session_state:
-    st.session_state.reset = False
-
+# --- Reset Button Logic ---
 if st.button("🔄 Reset Form"):
-    st.session_state.reset = True
+    for key in [
+        "Title", "GTS ID", "Requested by", "Reference Number",
+        "Requestor Email", "HFM", "Target Language(s)", "Content Type"
+    ]:
+        if key in st.session_state:
+            del st.session_state[key]
     st.rerun()
 
 # --- Input Fields ---
 st.subheader("🔤 Input Details")
-title = st.text_input("Title", value="" if st.session_state.reset else "")
-gts_id = st.text_input("GTS ID", value="GTS2500" if not st.session_state.reset else "GTS2500")
-requested_by = st.text_input("Requested by", value="" if st.session_state.reset else "")
-reference_number = st.text_input("Reference Number", value="" if st.session_state.reset else "")
-requestor_email = st.text_input("Requestor Email", value="" if st.session_state.reset else "")
-hfm = st.text_input("HFM", value="" if st.session_state.reset else "")
-target_languages = st.multiselect("Target Language(s)", ["DE", "ES", "FR", "JP", "KR", "CN", "TW", "BR"])
-content_type = st.multiselect("Content Type", ["Marketing", "Product"])
+title = st.text_input("Title", key="Title")
+gts_id = st.text_input("GTS ID", value="GTS2500", key="GTS ID")
+requested_by = st.text_input("Requested by", key="Requested by")
+reference_number = st.text_input("Reference Number", key="Reference Number")
+requestor_email = st.text_input("Requestor Email", key="Requestor Email")
+hfm = st.text_input("HFM", key="HFM")
+target_languages = st.multiselect("Target Language(s)", ["DE", "ES", "FR", "JP", "KR", "CN", "TW", "BR"], key="Target Language(s)")
+content_type = st.multiselect("Content Type", ["Marketing", "Product"], key="Content Type")
 
 # --- Helper functions ---
 def get_initial_lastname(full_name):
@@ -75,9 +77,14 @@ if st.button("🚀 Generate Names"):
         wordbee_name = build_wordbee_name()
         aem_name = wordbee_name if "Marketing" in content_type else None
 
+        st.markdown("#### 🧾 Workfront Name")
         st.code(workfront_name, language='none', line_numbers=False)
+
         if aem_name:
+            st.markdown("#### 📂 AEM Name")
             st.code(aem_name, language='none', line_numbers=False)
+
+        st.markdown("#### 🐝 Wordbee Name")
         st.code(wordbee_name, language='none', line_numbers=False)
 
         # --- Display Table ---
