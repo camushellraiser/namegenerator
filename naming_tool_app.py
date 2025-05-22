@@ -82,8 +82,16 @@ if st.button("🚀 Generate Names"):
 
         # --- Display Table ---
         data = {
-            "Field": ["Workfront Name"],
-            "Value": [workfront_name]
+            "Field": [
+                "Title", "GTS ID", "Requested by", "Reference Number",
+                "Requestor Email", "HFM", "Target Language(s)", "Content Type",
+                "Workfront Name"
+            ],
+            "Value": [
+                title, gts_id, requested_by, reference_number,
+                requestor_email, hfm, ", ".join(target_languages), ", ".join(content_type),
+                workfront_name
+            ]
         }
 
         if aem_name:
@@ -108,10 +116,11 @@ if st.button("🚀 Generate Names"):
             return output
 
         excel_bytes = convert_df_to_excel(result_df)
+        filename = f"{gts_id.strip()} Naming Convention.xlsx"
         st.download_button(
             label="📥 Download as Excel",
             data=excel_bytes,
-            file_name="naming_conventions.xlsx",
+            file_name=filename,
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
     else:
