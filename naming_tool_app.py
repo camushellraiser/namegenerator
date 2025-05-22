@@ -28,7 +28,7 @@ if "reset" not in st.session_state:
 
 if st.button("🔄 Reset Form"):
     st.session_state.reset = True
-    st.experimental_rerun()
+    st.rerun()
 
 # --- Input Fields ---
 st.subheader("🔤 Input Details")
@@ -72,8 +72,8 @@ if st.button("🚀 Generate Names"):
         st.markdown("---")
         st.subheader("📛 Generated Names")
         workfront_name = build_workfront_name()
-        aem_name = workfront_name if "Marketing" in content_type else None
         wordbee_name = build_wordbee_name()
+        aem_name = wordbee_name if "Marketing" in content_type else None
 
         st.code(workfront_name, language='none', line_numbers=False)
         if aem_name:
