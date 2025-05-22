@@ -22,8 +22,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- Reset Button Logic ---
-def reset_form():
+# --- Clear Session State to Reset Form ---
+if "reset_triggered" not in st.session_state:
+    st.session_state.reset_triggered = False
+
+if st.button("🔄 Reset Form"):
+    st.session_state.reset_triggered = True
+    st.experimental_set_query_params(reset="true")
+    st.stop()
+
+if st.session_state.reset_triggered:
     st.session_state["Title"] = ""
     st.session_state["Requested by"] = ""
     st.session_state["Reference Number"] = ""
@@ -31,9 +39,7 @@ def reset_form():
     st.session_state["HFM"] = ""
     st.session_state["Target Language(s)"] = []
     st.session_state["Content Type"] = []
-    st.rerun()
-
-st.button("🔄 Reset Form", on_click=reset_form)
+    st.session_state.reset_triggered = False
 
 # --- Input Fields ---
 st.subheader("🔤 Input Details")
