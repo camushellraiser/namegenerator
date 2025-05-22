@@ -24,7 +24,14 @@ st.markdown("""
 
 # --- Reset Button Logic ---
 def reset_form():
-    st.session_state.clear()
+    st.session_state["Title"] = ""
+    st.session_state["Requested by"] = ""
+    st.session_state["Reference Number"] = ""
+    st.session_state["Requestor Email"] = ""
+    st.session_state["HFM"] = ""
+    st.session_state["Target Language(s)"] = []
+    st.session_state["Content Type"] = []
+    st.rerun()
 
 st.button("🔄 Reset Form", on_click=reset_form)
 
