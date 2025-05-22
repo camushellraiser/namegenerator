@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import re
@@ -23,15 +22,23 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- Session State Initialization ---
+if "reset" not in st.session_state:
+    st.session_state.reset = False
+
+if st.button("🔄 Reset Form"):
+    st.session_state.reset = True
+    st.experimental_rerun()
+
 # --- Input Fields ---
 st.subheader("🔤 Input Details")
-title = st.text_input("Title", "Gibco Efficient-Pro Feed 3")
-gts_id = st.text_input("GTS ID", "GTS2500")
-requested_by = st.text_input("Requested by", "Yumiko Kotani")
-reference_number = st.text_input("Reference Number", "11014150")
-requestor_email = st.text_input("Requestor Email", "yumiko.kotani@thermofisher.com")
-hfm = st.text_input("HFM", "LSSINGAPORE")
-target_languages = st.multiselect("Target Language(s)", ["DE", "ES", "FR", "JP", "KR", "CN", "TW", "BR"], default=["JP"])
+title = st.text_input("Title", value="" if st.session_state.reset else "")
+gts_id = st.text_input("GTS ID", value="GTS2500" if not st.session_state.reset else "GTS2500")
+requested_by = st.text_input("Requested by", value="" if st.session_state.reset else "")
+reference_number = st.text_input("Reference Number", value="" if st.session_state.reset else "")
+requestor_email = st.text_input("Requestor Email", value="" if st.session_state.reset else "")
+hfm = st.text_input("HFM", value="" if st.session_state.reset else "")
+target_languages = st.multiselect("Target Language(s)", ["DE", "ES", "FR", "JP", "KR", "CN", "TW", "BR"])
 content_type = st.multiselect("Content Type", ["Marketing", "Product"])
 
 # --- Helper functions ---
@@ -59,44 +66,53 @@ def build_wordbee_name():
         name += f"_{target_languages[0]}"
     return name
 
-# --- Generate Names ---
-st.markdown("---")
-st.subheader("📛 Generated Names")
-workfront_name = build_workfront_name()
-aem_name = workfront_name if "Marketing" in content_type else None
-wordbee_name = build_wordbee_name()
+# --- Generate Button ---
+if st.button("🚀 Generate Names"):
+    if title and gts_id and requested_by and reference_number:
+        st.markdown("---")
+        st.subheader("📛 Generated Names")
+        workfront_name = build_workfront_name()
+        aem_name = workfront_name if "Marketing" in content_type else None
+        wordbee_name = build_wordbee_name()
 
-# --- Display Table ---
-data = {
-    "Field": ["Workfront Name"],
-    "Value": [workfront_name]
-}
+        st.code(workfront_name, language='none', line_numbers=False)
+        if aem_name:
+            st.code(aem_name, language='none', line_numbers=False)
+        st.code(wordbee_name, language='none', line_numbers=False)
 
-if aem_name:
-    data["Field"].append("AEM Name")
-    data["Value"].append(aem_name)
+        # --- Display Table ---
+        data = {
+            "Field": ["Workfront Name"],
+            "Value": [workfront_name]
+        }
 
-data["Field"].append("Wordbee Name")
-data["Value"].append(wordbee_name)
+        if aem_name:
+            data["Field"].append("AEM Name")
+            data["Value"].append(aem_name)
 
-result_df = pd.DataFrame(data)
-st.dataframe(result_df.style.set_properties(**{'font-size': '15px'}), use_container_width=True)
+        data["Field"].append("Wordbee Name")
+        data["Value"].append(wordbee_name)
 
-# --- Excel Export ---
-def convert_df_to_excel(df):
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Naming Results')
-        worksheet = writer.sheets['Naming Results']
-        worksheet.set_column('A:A', 25)
-        worksheet.set_column('B:B', 70)
-    output.seek(0)
-    return output
+        result_df = pd.DataFrame(data)
+        st.dataframe(result_df.style.set_properties(**{'font-size': '15px'}), use_container_width=True)
 
-excel_bytes = convert_df_to_excel(result_df)
-st.download_button(
-    label="📥 Download as Excel",
-    data=excel_bytes,
-    file_name="naming_conventions.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
+        # --- Excel Export ---
+        def convert_df_to_excel(df):
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                df.to_excel(writer, index=False, sheet_name='Naming Results')
+                worksheet = writer.sheets['Naming Results']
+                worksheet.set_column('A:A', 25)
+                worksheet.set_column('B:B', 70)
+            output.seek(0)
+            return output
+
+        excel_bytes = convert_df_to_excel(result_df)
+        st.download_button(
+            label="📥 Download as Excel",
+            data=excel_bytes,
+            file_name="naming_conventions.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    else:
+        st.warning("Please complete all required fields (Title, GTS ID, Requested by, Reference Number) to generate names.")
