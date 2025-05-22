@@ -23,14 +23,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- Reset Button Logic ---
-if st.button("🔄 Reset Form"):
-    for key in [
-        "Title", "GTS ID", "Requested by", "Reference Number",
-        "Requestor Email", "HFM", "Target Language(s)", "Content Type"
-    ]:
-        if key in st.session_state:
-            del st.session_state[key]
-    st.rerun()
+def reset_form():
+    st.session_state.clear()
+
+st.button("🔄 Reset Form", on_click=reset_form)
 
 # --- Input Fields ---
 st.subheader("🔤 Input Details")
