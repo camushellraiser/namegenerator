@@ -83,7 +83,11 @@ if st.button("🚀 Generate Names"):
         st.subheader("📛 Generated Names")
         workfront_name = build_workfront_name()
         wordbee_name = build_wordbee_name()
-        aem_name = wordbee_name if "Marketing" in content_type else None
+        aem_name = None
+        if "Marketing" in content_type:
+            aem_name = f"{gts_id}_Web_{get_initial_lastname(requested_by)}_{title}_AEM"
+            if len(target_languages) == 1:
+                aem_name += f"_{target_languages[0]}"
 
         st.markdown("#### 🧾 Workfront Name")
         st.code(workfront_name, language='none', line_numbers=False)
@@ -94,6 +98,18 @@ if st.button("🚀 Generate Names"):
 
         st.markdown("#### 🐝 Wordbee Name")
         st.code(wordbee_name, language='none', line_numbers=False)
+
+        # --- Wordbee Form Summary ---
+        with st.expander("📝 Wordbee Form Summary", expanded=False):
+            st.text(f"Order Title:               {title}")
+            st.text(f"Reference:                 {gts_id}")
+            st.text(f"Contact Name:              {requested_by}")
+            st.text(f"Email:                     {requestor_email}")
+            st.text(f"If submitting for someone: {requested_by}")
+            st.text(f"HFM Code:                  {hfm}")
+            st.text(f"Languages:                 {', '.join(target_languages)}")
+            st.text(f"Content Type:              {', '.join(content_type)}")
+            st.text(f"Generated Name:            {workfront_name if workfront_name else ''}")
 
         # --- Display Table ---
         data = {
