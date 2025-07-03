@@ -1,0 +1,16 @@
+name: Keep NameGenerator App Alive
+
+on:
+  schedule:
+    # every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping NameGenerator App
+        run: |
+          curl -fsS https://namegenerator-3ssw2srhrtzbkcvl69gftj.streamlit.app/ \
+            || (echo "🔴 Ping failed" && exit 1)
