@@ -147,7 +147,10 @@ if st.session_state['generated']:
     st.markdown('#### 🧾 Workfront Name')
     st.code(st.session_state['workfront_name'], language='none')
     for name in st.session_state.get('aem_list', []):
-        st.markdown('#### 📂 AEM Name')
+        # Append flag for each AEM Name entry
+        code = name.split('_')[-1]
+        flag = lang_emojis.get(code, '')
+        st.markdown(f"#### 📂 AEM Name {flag}")
         st.code(name, language='none')
     # Wordbee Name (grouped)
     st.markdown('#### 🐝 Wordbee Name')
