@@ -14,6 +14,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# Language options and emoji map (global)
+LANGUAGE_OPTIONS = [
+    ("BR", "🇧🇷"), ("CN", "🇨🇳"), ("DE", "🇩🇪"), ("ES", "🇪🇸"),
+    ("FR", "🇫🇷"), ("JP", "🇯🇵"), ("KR", "🇰🇷"), ("TW", "🇹🇼"),
+]
+lang_emojis = {code: emoji for code, emoji in LANGUAGE_OPTIONS}
+
 # Initialize session state
 for flag in ['generated', 'warning']:
     if flag not in st.session_state:
@@ -24,10 +31,11 @@ def reset_form():
     # Clear inputs except GTS ID
     for key in ['Title', 'Requested by', 'Reference Number', 'Requestor Email', 'HFM']:
         st.session_state.pop(key, None)
+    # clear dropdown states
     st.session_state.pop('target_disp', None)
     st.session_state.pop('content_type', None)
     # Clear results
-    for key in ['shared_name','workfront_name','wordbee_list','aem_list','result_df','generated','warning']:
+    for key in ['shared_name', 'workfront_name', 'wordbee_list', 'aem_list', 'result_df', 'generated', 'warning']:
         st.session_state.pop(key, None)
 
 # Reset button
@@ -44,24 +52,18 @@ with st.form(key='input_form'):
     st.text_input("HFM", key='HFM')
     
     # Language & Content Type
-    LANGUAGE_OPTIONS = [
-        ("BR","🇧🇷"),("CN","🇨🇳"),("DE","🇩🇪"),("ES","🇪🇸"),
-        ("FR","🇫🇷"),("JP","🇯🇵"),("KR","🇰🇷"),("TW","🇹🇼"),
-    ]
     display_options = [f"{emoji} {code}" for code, emoji in sorted(LANGUAGE_OPTIONS)]
     selected_disp = st.multiselect("Target Language(s)", display_options, key='target_disp')
-    # extract codes and keep emoji mapping
     languages = [opt.split()[1] for opt in selected_disp]
-    lang_emojis = {code: emoji for code, emoji in LANGUAGE_OPTIONS}
     
-    st.multiselect("Content Type", ["Marketing","Product"], key='content_type')
+    st.multiselect("Content Type", ["Marketing", "Product"], key='content_type')
     
     submit = st.form_submit_button("🚀 Generate Names")
 
 # --- Name Builders ---
 def get_initial_lastname(full_name: str) -> str:
     parts = full_name.strip().split()
-    return (parts[0][0] + parts[-1]) if len(parts)>=2 else (parts[0] if parts else "")
+    return (parts[0][0] + parts[-1]) if len(parts) >= 2 else (parts[0] if parts else "")
 
 def build_shared(name_id, req):
     return f"{name_id}_Web_{get_initial_lastname(req)}"
@@ -69,24 +71,23 @@ def build_shared(name_id, req):
 def build_workfront(shared, ttl, ref):
     return f"{shared}_{ttl}_{ref}"
 
-# Return list of Wordbee names per language
 def build_wordbee_list(shared, ttl, langs, ct):
     base = f"{shared}_{ttl}"
     systems = []
-    if 'Marketing' in ct: systems.append('AEM')
-    if 'Product' in ct: systems.append('Iris')
+    if 'Marketing' in ct:
+        systems.append('AEM')
+    if 'Product' in ct:
+        systems.append('Iris')
     if systems:
         base += '_' + '_'.join(systems)
-    # If multiple languages, return one entry per lang; if single, append code
+    # One per language if multiple, else append code
     if langs:
-        if len(langs) > 1:
-            return [f"{base}_{lang}" for lang in langs]
-        else:
-            return [f"{base}_{langs[0]}"]
+        return [f"{base}_{lang}" for lang in langs]
     return [base]
 
 def build_aem_list(shared, ttl, langs, ct):
-    if 'Marketing' not in ct: return []
+    if 'Marketing' not in ct:
+        return []
     base = f"{shared}_{ttl}_AEM"
     if langs:
         return [f"{base}_{lang}" for lang in langs]
@@ -94,17 +95,17 @@ def build_aem_list(shared, ttl, langs, ct):
 
 # --- Generate Logic ---
 if submit:
-    # Validate
     if all([st.session_state.get('Title'), st.session_state.get('GTS ID'),
             st.session_state.get('Requested by'), st.session_state.get('Reference Number')]):
         ttl = st.session_state['Title']
         gid = st.session_state['GTS ID']
         req = st.session_state['Requested by']
         ref = st.session_state['Reference Number']
+        ct = st.session_state.get('content_type', [])
         shared = build_shared(gid, req)
         work = build_workfront(shared, ttl, ref)
-        wbee_list = build_wordbee_list(shared, ttl, languages, st.session_state['content_type'])
-        aem_list = build_aem_list(shared, ttl, languages, st.session_state['content_type'])
+        wbee_list = build_wordbee_list(shared, ttl, languages, ct)
+        aem_list = build_aem_list(shared, ttl, languages, ct)
         # store
         st.session_state.update({
             'shared_name': shared,
@@ -114,21 +115,18 @@ if submit:
             'generated': True,
             'warning': False
         })
-        # build results table
+        # build table
         data = {
             'Field': ['Title','GTS ID','Requested by','Reference Number','Requestor Email','HFM','Target Language(s)','Content Type','GTS Shared Library Name','Workfront Name'],
-            'Value': [ttl,gid,req,ref, st.session_state.get('Requestor Email',''), st.session_state.get('HFM',''), ', '.join(languages), ', '.join(st.session_state['content_type']), shared, work]
+            'Value': [ttl, gid, req, ref, st.session_state.get('Requestor Email',''), st.session_state.get('HFM',''), ', '.join(languages), ', '.join(ct), shared, work]
         }
-        # AEM
         for name in aem_list:
             data['Field'].append('AEM Name')
             data['Value'].append(name)
-        # Wordbee
         for name in wbee_list:
             data['Field'].append('Wordbee Name')
             data['Value'].append(name)
-        df = pd.DataFrame(data)
-        st.session_state['result_df'] = df
+        st.session_state['result_df'] = pd.DataFrame(data)
     else:
         st.session_state['generated'] = False
         st.session_state['warning'] = True
@@ -144,11 +142,10 @@ if st.session_state['generated']:
     st.code(st.session_state['shared_name'], language='none')
     st.markdown('#### 🧾 Workfront Name')
     st.code(st.session_state['workfront_name'], language='none')
-    for name in st.session_state['aem_list']:
+    for name in st.session_state.get('aem_list', []):
         st.markdown('#### 📂 AEM Name')
         st.code(name, language='none')
-    for name in st.session_state['wordbee_list']:
-        # include flag
+    for name in st.session_state.get('wordbee_list', []):
         code = name.split('_')[-1]
         flag = lang_emojis.get(code, '')
         st.markdown(f"#### 🐝 Wordbee Name {flag}")
@@ -163,7 +160,7 @@ if st.session_state['generated']:
         st.text(f"If submitting for someone: {s['Requested by']}")
         st.text(f"HFM Code:                  {s['HFM']}")
         st.text(f"Languages:                 {', '.join(languages)}")
-        st.text(f"Content Type:              {', '.join(st.session_state['content_type'])}")
+        st.text(f"Content Type:              {', '.join(st.session_state.get('content_type', []))}")
         st.text(f"Generated Name:            {s['workfront_name']}")
     st.dataframe(st.session_state['result_df'].style.set_properties(**{'font-size':'15px'}), use_container_width=True)
     # Download Excel
