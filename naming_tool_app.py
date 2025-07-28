@@ -80,12 +80,15 @@ def build_wordbee_list(shared, ttl, langs, ct):
         systems.append('Iris')
     if systems:
         base += '_' + '_'.join(systems)
-    # One per language if multiple, else append code
+    # Group languages: if one, append code; if multiple, return base only
     if langs:
-        return [f"{base}_{lang}" for lang in langs]
+        if len(langs)==1:
+            return [f"{base}_{langs[0]}"]
+        else:
+            return [base]
     return [base]
 
-def build_aem_list(shared, ttl, langs, ct):
+def build_aem_list(shared, ttl, langs, ct):(shared, ttl, langs, ct):
     if 'Marketing' not in ct:
         return []
     base = f"{shared}_{ttl}_AEM"
