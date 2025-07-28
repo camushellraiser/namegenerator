@@ -106,8 +106,10 @@ def generate_names():
         st.session_state.warning = True
 
 # --- UI Elements ---
+# Reset button
 st.button("🔄 Reset Form", on_click=reset_form)
 
+# Input fields
 st.subheader("🔤 Input Details")
 st.text_input("Title", key="Title")
 st.text_input("GTS ID", value="GTS2500", key="GTS ID")
@@ -128,27 +130,15 @@ LANGUAGE_OPTIONS = [
     ("KR", "🇰🇷"),
     ("TW", "🇹🇼"),
 ]
-# Display dropdown with flags
 display_options = [f"{code} {emoji}" for code, emoji in LANGUAGE_OPTIONS]
 selected_display = st.multiselect("Target Language(s)", display_options, key="Target Language(s)_disp")
-# Store codes in session_state
+# Store only codes
 st.session_state['Target Language(s)'] = [opt.split()[0] for opt in selected_display]
 
-# Content type
+# Content Type
 st.multiselect("Content Type", ["Marketing", "Product"], key="Content Type")
 
 # Generate button
-st.button("🚀 Generate Names", on_click=generate_names), on_click=generate_names)("🔄 Reset Form", on_click=reset_form)
-
-st.subheader("🔤 Input Details")
-st.text_input("Title", key="Title")
-st.text_input("GTS ID", value="GTS2500", key="GTS ID")
-st.text_input("Requested by", key="Requested by")
-st.text_input("Reference Number", key="Reference Number")
-st.text_input("Requestor Email", key="Requestor Email")
-st.text_input("HFM", key="HFM")
-st.multiselect("Target Language(s)", ["DE", "ES", "FR", "JP", "KR", "CN", "TW", "BR"], key="Target Language(s)")
-st.multiselect("Content Type", ["Marketing", "Product"], key="Content Type")
 st.button("🚀 Generate Names", on_click=generate_names)
 
 # Show warning if needed
