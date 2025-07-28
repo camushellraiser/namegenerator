@@ -27,7 +27,7 @@ def reset_form():
     st.session_state.pop('target_disp', None)
     st.session_state.pop('content_type', None)
     # Clear results
-    for key in ['shared_name','workfront_name','wordbee_name','aem_list','result_df','generated','warning']:
+    for key in ['shared_name','workfront_name','wordbee_list','aem_list','result_df','generated','warning']:
         st.session_state.pop(key, None)
 
 # Reset button
@@ -36,12 +36,12 @@ st.button("🔄 Reset Form", on_click=reset_form)
 # --- Input Form ---
 with st.form(key='input_form'):
     st.subheader("🔤 Input Details")
-    title = st.text_input("Title", key='Title')
-    gts_id = st.text_input("GTS ID", value="GTS2500", key='GTS ID')
-    requested_by = st.text_input("Requested by", key='Requested by')
-    reference_number = st.text_input("Reference Number", key='Reference Number')
-    requestor_email = st.text_input("Requestor Email", key='Requestor Email')
-    hfm = st.text_input("HFM", key='HFM')
+    st.text_input("Title", key='Title')
+    st.text_input("GTS ID", value="GTS2500", key='GTS ID')
+    st.text_input("Requested by", key='Requested by')
+    st.text_input("Reference Number", key='Reference Number')
+    st.text_input("Requestor Email", key='Requestor Email')
+    st.text_input("HFM", key='HFM')
     
     # Language & Content Type
     LANGUAGE_OPTIONS = [
@@ -50,9 +50,11 @@ with st.form(key='input_form'):
     ]
     display_options = [f"{emoji} {code}" for code, emoji in sorted(LANGUAGE_OPTIONS)]
     selected_disp = st.multiselect("Target Language(s)", display_options, key='target_disp')
-    # extract codes
+    # extract codes and keep emoji mapping
     languages = [opt.split()[1] for opt in selected_disp]
-    content_type = st.multiselect("Content Type", ["Marketing","Product"], key='content_type')
+    lang_emojis = {code: emoji for code, emoji in LANGUAGE_OPTIONS}
+    
+    st.multiselect("Content Type", ["Marketing","Product"], key='content_type')
     
     submit = st.form_submit_button("🚀 Generate Names")
 
@@ -67,47 +69,69 @@ def build_shared(name_id, req):
 def build_workfront(shared, ttl, ref):
     return f"{shared}_{ttl}_{ref}"
 
-def build_wordbee(shared, ttl, langs, ct):
+# Return list of Wordbee names per language
+def build_wordbee_list(shared, ttl, langs, ct):
     base = f"{shared}_{ttl}"
     systems = []
     if 'Marketing' in ct: systems.append('AEM')
     if 'Product' in ct: systems.append('Iris')
-    if systems: base += '_' + '_'.join(systems)
-    if len(langs)==1: base += f"_{langs[0]}"
-    return base
+    if systems:
+        base += '_' + '_'.join(systems)
+    # If multiple languages, return one entry per lang; if single, append code
+    if langs:
+        if len(langs) > 1:
+            return [f"{base}_{lang}" for lang in langs]
+        else:
+            return [f"{base}_{langs[0]}"]
+    return [base]
 
 def build_aem_list(shared, ttl, langs, ct):
     if 'Marketing' not in ct: return []
     base = f"{shared}_{ttl}_AEM"
-    return [f"{base}_{lang}" for lang in (langs if langs else [''])]
+    if langs:
+        return [f"{base}_{lang}" for lang in langs]
+    return [base]
 
 # --- Generate Logic ---
 if submit:
     # Validate
     if all([st.session_state.get('Title'), st.session_state.get('GTS ID'),
             st.session_state.get('Requested by'), st.session_state.get('Reference Number')]):
-        ttl = st.session_state['Title']; gid = st.session_state['GTS ID']; req = st.session_state['Requested by']; ref = st.session_state['Reference Number']
+        ttl = st.session_state['Title']
+        gid = st.session_state['GTS ID']
+        req = st.session_state['Requested by']
+        ref = st.session_state['Reference Number']
         shared = build_shared(gid, req)
         work = build_workfront(shared, ttl, ref)
-        wbee = build_wordbee(shared, ttl, languages, content_type)
-        aem_list = build_aem_list(shared, ttl, languages, content_type)
+        wbee_list = build_wordbee_list(shared, ttl, languages, st.session_state['content_type'])
+        aem_list = build_aem_list(shared, ttl, languages, st.session_state['content_type'])
         # store
         st.session_state.update({
-            'shared_name': shared, 'workfront_name': work,
-            'wordbee_name': wbee, 'aem_list': aem_list,
-            'generated': True, 'warning': False
+            'shared_name': shared,
+            'workfront_name': work,
+            'wordbee_list': wbee_list,
+            'aem_list': aem_list,
+            'generated': True,
+            'warning': False
         })
-        # build table data
+        # build results table
         data = {
             'Field': ['Title','GTS ID','Requested by','Reference Number','Requestor Email','HFM','Target Language(s)','Content Type','GTS Shared Library Name','Workfront Name'],
-            'Value': [ttl,gid,req,ref, st.session_state.get('Requestor Email',''), st.session_state.get('HFM',''), ', '.join(languages), ', '.join(content_type), shared, work]
+            'Value': [ttl,gid,req,ref, st.session_state.get('Requestor Email',''), st.session_state.get('HFM',''), ', '.join(languages), ', '.join(st.session_state['content_type']), shared, work]
         }
+        # AEM
         for name in aem_list:
-            data['Field'].append('AEM Name'); data['Value'].append(name)
-        data['Field'].append('Wordbee Name'); data['Value'].append(wbee)
-        st.session_state['result_df'] = pd.DataFrame(data)
+            data['Field'].append('AEM Name')
+            data['Value'].append(name)
+        # Wordbee
+        for name in wbee_list:
+            data['Field'].append('Wordbee Name')
+            data['Value'].append(name)
+        df = pd.DataFrame(data)
+        st.session_state['result_df'] = df
     else:
-        st.session_state['generated'] = False; st.session_state['warning'] = True
+        st.session_state['generated'] = False
+        st.session_state['warning'] = True
 
 # --- Display ---
 if st.session_state['warning']:
@@ -116,10 +140,20 @@ if st.session_state['warning']:
 if st.session_state['generated']:
     st.markdown('---')
     st.subheader('📛 Generated Names')
-    st.markdown('#### 📚 GTS Shared Library Name'); st.code(st.session_state['shared_name'], language='none')
-    st.markdown('#### 🧾 Workfront Name'); st.code(st.session_state['workfront_name'], language='none')
-    for name in st.session_state.get('aem_list', []): st.markdown('#### 📂 AEM Name'); st.code(name, language='none')
-    st.markdown('#### 🐝 Wordbee Name'); st.code(st.session_state['wordbee_name'], language='none')
+    st.markdown('#### 📚 GTS Shared Library Name')
+    st.code(st.session_state['shared_name'], language='none')
+    st.markdown('#### 🧾 Workfront Name')
+    st.code(st.session_state['workfront_name'], language='none')
+    for name in st.session_state['aem_list']:
+        st.markdown('#### 📂 AEM Name')
+        st.code(name, language='none')
+    for name in st.session_state['wordbee_list']:
+        # include flag
+        code = name.split('_')[-1]
+        flag = lang_emojis.get(code, '')
+        st.markdown(f"#### 🐝 Wordbee Name {flag}")
+        st.code(name, language='none')
+    # Summary
     with st.expander('📝 Wordbee Form Summary', expanded=False):
         s = st.session_state
         st.text(f"Order Title:               {s['Title']}")
@@ -129,12 +163,15 @@ if st.session_state['generated']:
         st.text(f"If submitting for someone: {s['Requested by']}")
         st.text(f"HFM Code:                  {s['HFM']}")
         st.text(f"Languages:                 {', '.join(languages)}")
-        st.text(f"Content Type:              {', '.join(content_type)}")
+        st.text(f"Content Type:              {', '.join(st.session_state['content_type'])}")
         st.text(f"Generated Name:            {s['workfront_name']}")
     st.dataframe(st.session_state['result_df'].style.set_properties(**{'font-size':'15px'}), use_container_width=True)
+    # Download Excel
     buf = BytesIO()
     with pd.ExcelWriter(buf, engine='xlsxwriter') as w:
         st.session_state['result_df'].to_excel(w, index=False, sheet_name='Naming Results')
-        ws = w.sheets['Naming Results']; ws.set_column('A:A',25); ws.set_column('B:B',70)
+        ws = w.sheets['Naming Results']
+        ws.set_column('A:A',25)
+        ws.set_column('B:B',70)
     buf.seek(0)
     st.download_button('📥 Download as Excel', data=buf, file_name=f"{st.session_state['GTS ID']} Naming Convention.xlsx", mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
