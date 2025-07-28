@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 
+# App configuration
 st.set_page_config(page_title="Naming Convention Generator", layout="centered")
 st.title("🧩 Naming Convention Generator")
 st.markdown("""
@@ -21,187 +22,149 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- Session State Initialization ---
-if "generated" not in st.session_state:
-    st.session_state.generated = False
-if "warning" not in st.session_state:
-    st.session_state.warning = False
+# Initialize session state flags
+if 'generated' not in st.session_state:
+    st.session_state['generated'] = False
+if 'warning' not in st.session_state:
+    st.session_state['warning'] = False
 
-# --- Helper Functions ---
-def get_initial_lastname(full_name):
-    parts = full_name.strip().split()
-    if len(parts) >= 2:
-        return parts[0][0] + parts[-1]
-    return parts[0] if parts else ""
-
-def build_workfront_name():
-    return f"{st.session_state['GTS ID']}_Web_{get_initial_lastname(st.session_state['Requested by'])}_{st.session_state['Title']}_{st.session_state['Reference Number']}"
-
-def build_wordbee_name():
-    name = f"{st.session_state['GTS ID']}_Web_{get_initial_lastname(st.session_state['Requested by'])}_{st.session_state['Title']}"
-    systems = []
-    if "Marketing" in st.session_state['Content Type']:
-        systems.append("AEM")
-    if "Product" in st.session_state['Content Type']:
-        systems.append("Iris")
-    if systems:
-        name += "_" + "_".join(systems)
-    langs = st.session_state['Target Language(s)']
-    if len(langs) == 1:
-        name += f"_{langs[0]}"
-    return name
-
-# --- Callbacks ---
+# --- Reset callback ---
 def reset_form():
-    # Clear all input fields except GTS ID
-    for field in ["Title", "Requested by", "Reference Number", "Requestor Email", "HFM", "Content Type"]:
-        if field in st.session_state:
-            del st.session_state[field]
-    # Clear language selections
-    if 'Target Language(s)' in st.session_state:
-        del st.session_state['Target Language(s)']
-    if 'Target Language(s)_disp' in st.session_state:
-        del st.session_state['Target Language(s)_disp']
+    # Clear inputs except GTS ID
+    for key in ['Title', 'Requested by', 'Reference Number', 'Requestor Email', 'HFM']:
+        st.session_state.pop(key, None)
+    st.session_state.pop('target_disp', None)
+    st.session_state.pop('content_type', None)
     # Clear results
-    for key in ['workfront_name', 'aem_name', 'wordbee_name', 'result_df', 'generated', 'warning']:
-        if key in st.session_state:
-            del st.session_state[key]
-    # No need to rerun; clearing session state will reset widgets on next render:
-    # Clear all input fields except GTS ID
-    for field in ["Title", "Requested by", "Reference Number", "Requestor Email", "HFM", "Target Language(s)", "Content Type"]:
-        st.session_state.pop(field, None)
-    st.session_state.generated = False
-    st.session_state.warning = False
-    st.rerun()
+    for key in ['workfront_name','aem_name','wordbee_name','result_df','generated','warning']:
+        st.session_state.pop(key, None)
 
-def generate_names():
-    # Validate required fields
-    title = st.session_state.get("Title", "").strip()
-    gts = st.session_state.get("GTS ID", "").strip()
-    req = st.session_state.get("Requested by", "").strip()
-    ref = st.session_state.get("Reference Number", "").strip()
-    if title and gts and req and ref:
-        # Build names
-        st.session_state.workfront_name = build_workfront_name()
-        st.session_state.wordbee_name = build_wordbee_name()
-        # Build AEM name if Marketing
-        aem = None
-        if "Marketing" in st.session_state.get('Content Type', []):
-            aem = f"{gts}_Web_{get_initial_lastname(req)}_{title}_AEM"
-            langs = st.session_state.get('Target Language(s)', [])
-            if len(langs) == 1:
-                aem += f"_{langs[0]}"
-        st.session_state.aem_name = aem
-        # Prepare results table
-        data = {
-            "Field": [
-                "Title", "GTS ID", "Requested by", "Reference Number",
-                "Requestor Email", "HFM", "Target Language(s)", "Content Type",
-                "Workfront Name"
-            ],
-            "Value": [
-                title, gts, req, ref,
-                st.session_state.get("Requestor Email", ""), st.session_state.get("HFM", ""),
-                ", ".join(st.session_state.get('Target Language(s)', [])),
-                ", ".join(st.session_state.get('Content Type', [])),
-                st.session_state.workfront_name
-            ]
-        }
-        if st.session_state.aem_name:
-            data['Field'].append('AEM Name')
-            data['Value'].append(st.session_state.aem_name)
-        data['Field'].append('Wordbee Name')
-        data['Value'].append(st.session_state.wordbee_name)
-        st.session_state.result_df = pd.DataFrame(data)
-        st.session_state.generated = True
-        st.session_state.warning = False
-    else:
-        st.session_state.generated = False
-        st.session_state.warning = True
-
-# --- UI Elements ---
 # Reset button
 st.button("🔄 Reset Form", on_click=reset_form)
 
-# Input fields
+# --- Input Fields ---
 st.subheader("🔤 Input Details")
-st.text_input("Title", key="Title")
-st.text_input("GTS ID", value="GTS2500", key="GTS ID")
-st.text_input("Requested by", key="Requested by")
-st.text_input("Reference Number", key="Reference Number")
-st.text_input("Requestor Email", key="Requestor Email")
-st.text_input("HFM", key="HFM")
+title = st.text_input("Title", key='Title')
+gts_id = st.text_input("GTS ID", value="GTS2500", key='GTS ID')
+requested_by = st.text_input("Requested by", key='Requested by')
+reference_number = st.text_input("Reference Number", key='Reference Number')
+requestor_email = st.text_input("Requestor Email", key='Requestor Email')
+hfm = st.text_input("HFM", key='HFM')
 
-# --- Language & Content Type Inputs ---
-# Language options with flags, sorted alphabetically by code
+# --- Language & Content Type ---
 LANGUAGE_OPTIONS = [
-    ("BR", "🇧🇷"),
-    ("CN", "🇨🇳"),
-    ("DE", "🇩🇪"),
-    ("ES", "🇪🇸"),
-    ("FR", "🇫🇷"),
-    ("JP", "🇯🇵"),
-    ("KR", "🇰🇷"),
-    ("TW", "🇹🇼"),
+    ("BR","🇧🇷"),("CN","🇨🇳"),("DE","🇩🇪"),("ES","🇪🇸"),
+    ("FR","🇫🇷"),("JP","🇯🇵"),("KR","🇰🇷"),("TW","🇹🇼"),
 ]
-display_options = [f"{code} {emoji}" for code, emoji in LANGUAGE_OPTIONS]
-selected_display = st.multiselect("Target Language(s)", display_options, key="Target Language(s)_disp")
-# Store only codes
-st.session_state['Target Language(s)'] = [opt.split()[0] for opt in selected_display]
+# Flags on left, sorted by code
+display_options = [f"{emoji} {code}" for code,emoji in sorted(LANGUAGE_OPTIONS)]
+selected_disp = st.multiselect("Target Language(s)", display_options, key='target_disp')
+# Extract codes
+languages = [opt.split()[1] for opt in selected_disp]
 
-# Content Type
-st.multiselect("Content Type", ["Marketing", "Product"], key="Content Type")
+content_type = st.multiselect("Content Type", ["Marketing","Product"], key='content_type')
 
-# Generate button
-st.button("🚀 Generate Names", on_click=generate_names)
+# --- Name Builders ---
+def get_initial_lastname(full_name: str) -> str:
+    parts = full_name.strip().split()
+    return (parts[0][0] + parts[-1]) if len(parts)>=2 else (parts[0] if parts else "")
 
-# Show warning if needed
-if st.session_state.warning:
-    st.warning("Please complete all required fields (Title, GTS ID, Requested by, Reference Number) to generate names.")
+def build_workfront(name_id, req, ttl, ref):
+    return f"{name_id}_Web_{get_initial_lastname(req)}_{ttl}_{ref}"
 
-# Display results if generated persists
-if st.session_state.generated:
-    st.markdown("---")
-    st.subheader("📛 Generated Names")
-    st.markdown("#### 🧾 Workfront Name")
-    st.code(st.session_state.workfront_name, language='none', line_numbers=False)
-    if st.session_state.aem_name:
-        st.markdown("#### 📂 AEM Name")
-        st.code(st.session_state.aem_name, language='none', line_numbers=False)
-    st.markdown("#### 🐝 Wordbee Name")
-    st.code(st.session_state.wordbee_name, language='none', line_numbers=False)
+def build_wordbee(name_id, req, ttl, langs, ct):
+    base = f"{name_id}_Web_{get_initial_lastname(req)}_{ttl}"
+    systems = []
+    if 'Marketing' in ct:
+        systems.append('AEM')
+    if 'Product' in ct:
+        systems.append('Iris')
+    if systems:
+        base += '_' + '_'.join(systems)
+    if len(langs)==1:
+        base += f"_{langs[0]}"
+    return base
 
-    # Wordbee Form Summary
-    with st.expander("📝 Wordbee Form Summary", expanded=False):
+def build_aem(name_id, req, ttl, langs, ct):
+    if 'Marketing' not in ct:
+        return None
+    base = f"{name_id}_Web_{get_initial_lastname(req)}_{ttl}_AEM"
+    if len(langs)==1:
+        base += f"_{langs[0]}"
+    return base
+
+# --- Generate Names ---
+if st.button("🚀 Generate Names"):
+    # Validate
+    if all([st.session_state.get('Title'), st.session_state.get('GTS ID'),
+            st.session_state.get('Requested by'), st.session_state.get('Reference Number')]):
+        ttl = st.session_state['Title']; gid=st.session_state['GTS ID']; req=st.session_state['Requested by']; ref=st.session_state['Reference Number']
+        work = build_workfront(gid, req, ttl, ref)
+        wbee = build_wordbee(gid, req, ttl, languages, content_type)
+        aemn = build_aem(gid, req, ttl, languages, content_type)
+        # Save to session
+        st.session_state['workfront_name']=work
+        st.session_state['wordbee_name']=wbee
+        st.session_state['aem_name']=aemn
+        # Build table
+        data={
+            'Field':['Title','GTS ID','Requested by','Reference Number',
+                     'Requestor Email','HFM','Target Language(s)','Content Type','Workfront Name'],
+            'Value':[ttl,gid,req,ref,
+                     st.session_state.get('Requestor Email',''), st.session_state.get('HFM',''),
+                     ', '.join(languages), ', '.join(content_type), work]
+        }
+        if aemn:
+            data['Field'].append('AEM Name'); data['Value'].append(aemn)
+        data['Field'].append('Wordbee Name'); data['Value'].append(wbee)
+        df=pd.DataFrame(data)
+        st.session_state['result_df']=df
+        st.session_state['generated']=True
+        st.session_state['warning']=False
+    else:
+        st.session_state['generated']=False
+        st.session_state['warning']=True
+
+# Show warning
+if st.session_state['warning']:
+    st.warning("Complete all required fields to generate names.")
+
+# Display results
+if st.session_state['generated']:
+    st.markdown('---')
+    st.subheader('📛 Generated Names')
+    st.markdown('#### 🧾 Workfront Name')
+    st.code(st.session_state['workfront_name'], language='none')
+    if st.session_state['aem_name']:
+        st.markdown('#### 📂 AEM Name')
+        st.code(st.session_state['aem_name'], language='none')
+    st.markdown('#### 🐝 Wordbee Name')
+    st.code(st.session_state['wordbee_name'], language='none')
+    
+    # Summary
+    with st.expander('📝 Wordbee Form Summary',expanded=False):
         st.text(f"Order Title:               {st.session_state['Title']}")
         st.text(f"Reference:                 {st.session_state['GTS ID']}")
         st.text(f"Contact Name:              {st.session_state['Requested by']}")
         st.text(f"Email:                     {st.session_state['Requestor Email']}")
         st.text(f"If submitting for someone: {st.session_state['Requested by']}")
         st.text(f"HFM Code:                  {st.session_state['HFM']}")
-        st.text(f"Languages:                 {', '.join(st.session_state.get('Target Language(s)', []))}")
-        st.text(f"Content Type:              {', '.join(st.session_state.get('Content Type', []))}")
-        st.text(f"Generated Name:            {st.session_state.workfront_name}")
+        st.text(f"Languages:                 {', '.join(languages)}")
+        st.text(f"Content Type:              {', '.join(content_type)}")
+        st.text(f"Generated Name:            {st.session_state['workfront_name']}")
 
-    # Display results table
-    st.dataframe(st.session_state.result_df.style.set_properties(**{'font-size': '15px'}), use_container_width=True)
-
-    # Download as Excel
-    def convert_df_to_excel(df):
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, index=False, sheet_name='Naming Results')
-            ws = writer.sheets['Naming Results']
-            ws.set_column('A:A', 25)
-            ws.set_column('B:B', 70)
-        output.seek(0)
-        return output
-
-    excel_bytes = convert_df_to_excel(st.session_state.result_df)
-    filename = f"{st.session_state['GTS ID'].strip()} Naming Convention.xlsx"
-    st.download_button(
-        label="📥 Download as Excel",
-        data=excel_bytes,
-        file_name=filename,
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    # Table
+    st.dataframe(st.session_state['result_df'].style.set_properties(**{'font-size':'15px'}), use_container_width=True)
+    
+    # Download Excel
+    def to_excel(df):
+        buf=BytesIO()
+        with pd.ExcelWriter(buf,engine='xlsxwriter') as w:
+            df.to_excel(w,index=False,sheet_name='Naming Results')
+            ws=w.sheets['Naming Results']
+            ws.set_column('A:A',25); ws.set_column('B:B',70)
+        buf.seek(0); return buf
+    excel_buf = to_excel(st.session_state['result_df'])
+    fname = f"{st.session_state['GTS ID'].strip()} Naming Convention.xlsx"
+    st.download_button('📥 Download as Excel', data=excel_buf, file_name=fname,
+                       mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
