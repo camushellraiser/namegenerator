@@ -116,6 +116,7 @@ st.text_input("Reference Number", key="Reference Number")
 st.text_input("Requestor Email", key="Requestor Email")
 st.text_input("HFM", key="HFM")
 
+# --- Language & Content Type Inputs ---
 # Language options with flags, sorted alphabetically by code
 LANGUAGE_OPTIONS = [
     ("BR", "🇧🇷"),
@@ -127,14 +128,17 @@ LANGUAGE_OPTIONS = [
     ("KR", "🇰🇷"),
     ("TW", "🇹🇼"),
 ]
-lang_display = [f"{code} {emoji}" for code, emoji in LANGUAGE_OPTIONS]
-selected_lang_display = st.multiselect("Target Language(s)", lang_display, key="Target Language(s)")
+# Display dropdown with flags
+display_options = [f"{code} {emoji}" for code, emoji in LANGUAGE_OPTIONS]
+selected_display = st.multiselect("Target Language(s)", display_options, key="Target Language(s)_disp")
+# Store codes in session_state
+st.session_state['Target Language(s)'] = [opt.split()[0] for opt in selected_display]
 
-# Convert displayed selections back to codes
-st.session_state['Target Language(s)'] = [item.split()[0] for item in selected_lang_display]
-
+# Content type
 st.multiselect("Content Type", ["Marketing", "Product"], key="Content Type")
-st.button("🚀 Generate Names", on_click=generate_names)("🔄 Reset Form", on_click=reset_form)
+
+# Generate button
+st.button("🚀 Generate Names", on_click=generate_names), on_click=generate_names)("🔄 Reset Form", on_click=reset_form)
 
 st.subheader("🔤 Input Details")
 st.text_input("Title", key="Title")
