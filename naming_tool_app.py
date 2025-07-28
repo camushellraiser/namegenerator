@@ -80,15 +80,16 @@ def build_wordbee_list(shared, ttl, langs, ct):
         systems.append('Iris')
     if systems:
         base += '_' + '_'.join(systems)
-    # Group languages: if one, append code; if multiple, return base only
+    # Group languages: single append code, multiple remain base
     if langs:
-        if len(langs)==1:
+        if len(langs) == 1:
             return [f"{base}_{langs[0]}"]
         else:
             return [base]
     return [base]
 
-def build_aem_list(shared, ttl, langs, ct):(shared, ttl, langs, ct):
+def build_aem_list(shared, ttl, langs, ct):
+    # Generates one AEM entry per target language
     if 'Marketing' not in ct:
         return []
     base = f"{shared}_{ttl}_AEM"
@@ -148,11 +149,9 @@ if st.session_state['generated']:
     for name in st.session_state.get('aem_list', []):
         st.markdown('#### 📂 AEM Name')
         st.code(name, language='none')
-    for name in st.session_state.get('wordbee_list', []):
-        code = name.split('_')[-1]
-        flag = lang_emojis.get(code, '')
-        st.markdown(f"#### 🐝 Wordbee Name {flag}")
-        st.code(name, language='none')
+    # Wordbee Name (grouped)
+    st.markdown('#### 🐝 Wordbee Name')
+    st.code(st.session_state.get('wordbee_list', [''])[0], language='none')
     # Summary
     with st.expander('📝 Wordbee Form Summary', expanded=False):
         s = st.session_state
