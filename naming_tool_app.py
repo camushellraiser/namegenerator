@@ -54,6 +54,20 @@ def build_wordbee_name():
 # --- Callbacks ---
 def reset_form():
     # Clear all input fields except GTS ID
+    for field in ["Title", "Requested by", "Reference Number", "Requestor Email", "HFM", "Content Type"]:
+        if field in st.session_state:
+            del st.session_state[field]
+    # Clear language selections
+    if 'Target Language(s)' in st.session_state:
+        del st.session_state['Target Language(s)']
+    if 'Target Language(s)_disp' in st.session_state:
+        del st.session_state['Target Language(s)_disp']
+    # Clear results
+    for key in ['workfront_name', 'aem_name', 'wordbee_name', 'result_df', 'generated', 'warning']:
+        if key in st.session_state:
+            del st.session_state[key]
+    # No need to rerun; clearing session state will reset widgets on next render:
+    # Clear all input fields except GTS ID
     for field in ["Title", "Requested by", "Reference Number", "Requestor Email", "HFM", "Target Language(s)", "Content Type"]:
         st.session_state.pop(field, None)
     st.session_state.generated = False
