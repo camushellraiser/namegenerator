@@ -131,7 +131,7 @@ if submit:
         for name in wbee_list:
             data['Field'].append('Wordbee Name')
             data['Value'].append(name)
-        st.session_state['result_df'] = pd.DataFrame(data) pd.DataFrame(data)
+        st.session_state['result_df'] = pd.DataFrame(data)
     else:
         st.session_state['generated'] = False
         st.session_state['warning'] = True
