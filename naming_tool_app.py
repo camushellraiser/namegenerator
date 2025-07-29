@@ -124,8 +124,9 @@ if submit:
             'Field': ['Title','GTS ID','Requested by','Reference Number','Requestor Email','HFM','Target Language(s)','Content Type','GTS Shared Library Name','Workfront Name'],
             'Value': [ttl, gid, req, ref, st.session_state.get('Requestor Email',''), st.session_state.get('HFM',''), ', '.join(languages), ', '.join(ct), shared, work]
         }
-        for name in aem_list:
-            data['Field'].append('AEM Name')
+                for name in aem_list:
+            code = name.split('_')[-1]
+            data['Field'].append(f"AEM Name - {code}")
             data['Value'].append(name)
         for name in wbee_list:
             data['Field'].append('Wordbee Name')
