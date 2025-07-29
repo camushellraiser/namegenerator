@@ -31,7 +31,7 @@ def reset_form():
     # Clear inputs except GTS ID
     for key in ['Title', 'Requested by', 'Reference Number', 'Requestor Email', 'HFM']:
         st.session_state.pop(key, None)
-    # clear dropdown states
+    # Clear dropdown states
     st.session_state.pop('target_disp', None)
     st.session_state.pop('content_type', None)
     # Clear results
@@ -110,7 +110,7 @@ if submit:
         work = build_workfront(shared, ttl, ref)
         wbee_list = build_wordbee_list(shared, ttl, languages, ct)
         aem_list = build_aem_list(shared, ttl, languages, ct)
-        # store
+        # Store
         st.session_state.update({
             'shared_name': shared,
             'workfront_name': work,
@@ -119,7 +119,7 @@ if submit:
             'generated': True,
             'warning': False
         })
-        # build table
+        # Build table
         data = {
             'Field': ['Title','GTS ID','Requested by','Reference Number','Requestor Email','HFM','Target Language(s)','Content Type','GTS Shared Library Name','Workfront Name'],
             'Value': [ttl, gid, req, ref, st.session_state.get('Requestor Email',''), st.session_state.get('HFM',''), ', '.join(languages), ', '.join(ct), shared, work]
@@ -142,16 +142,15 @@ if st.session_state['warning']:
 if st.session_state['generated']:
     st.markdown('---')
     st.subheader('📛 Generated Names')
-    st.markdown('#### 📚 GTS Shared Library Name')
+    st.markdown('#### �📚 GTS Shared Library Name')
     st.code(st.session_state['shared_name'], language='none')
     st.markdown('#### 🧾 Workfront Name')
     st.code(st.session_state['workfront_name'], language='none')
     for name in st.session_state.get('aem_list', []):
-        # Append flag and code for each AEM Name entry
         code = name.split('_')[-1]
         flag = lang_emojis.get(code, '')
         st.markdown(f"#### 📂 AEM Name - {code} {flag}")
-        st.code(name, language='none')(name, language='none')
+        st.code(name, language='none')
     # Wordbee Name (grouped)
     st.markdown('#### 🐝 Wordbee Name')
     st.code(st.session_state.get('wordbee_list', [''])[0], language='none')
