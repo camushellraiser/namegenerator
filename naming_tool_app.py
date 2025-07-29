@@ -36,7 +36,7 @@ raw = st.text_area(
 
 if raw:
     # Title: first line after the literal "Issue" keyword
-    m = re.search(r"^Issue\s*$\s*(.+)", raw, re.MULTILINE)
+    m = re.search(r"Issue\s*\n([\s\S]+?)\n\s*\n", raw)
     if m:
         st.session_state["Title"] = m.group(1).strip()
 
