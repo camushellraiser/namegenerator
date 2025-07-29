@@ -15,7 +15,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Language options and emoji map (global)
+# Language options and emoji map
 LANGUAGE_OPTIONS = [
     ("BR", "🇧🇷"), ("CN", "🇨🇳"), ("DE", "🇩🇪"), ("ES", "🇪🇸"),
     ("FR", "🇫🇷"), ("JP", "🇯🇵"), ("KR", "🇰🇷"), ("TW", "🇹🇼"),
@@ -35,10 +35,11 @@ raw = st.text_area(
 )
 
 if raw:
-    # Title: first line after the literal "Issue" keyword
-    m = re.search(r"Issue\s*\n([\s\S]+?)\n\s*\n", raw)
-    if m:
-        st.session_state["Title"] = m.group(1).strip()
+    # Title extractor: get all lines after each "Issue", then use the last non-empty one
+    titles = re.findall(r"Issue\s*\n([^\n]+)", raw)
+    good_titles = [t.strip() for t in titles if t.strip().lower() != "issue" and t.strip()]
+    if good_titles:
+        st.session_state["Title"] = good_titles[-1]
 
     # Reference Number
     m = re.search(r"Reference Number\s*\n(\d+)", raw)
@@ -66,36 +67,30 @@ if raw:
         ct_list = [c.strip() for c in m.group(1).split(",")]
         st.session_state["content_type"] = ct_list
 
-    # Target languages: pull all codes like "CN", "JP" next to "- LanguageName"
+    # Target languages: pull codes like "CN", "JP" next to "- LanguageName"
     codes = re.findall(r"\b([A-Z]{2})\b(?=\s*-\s*[A-Za-z])", raw)
-    # Dedupe & filter to known
     target_codes = []
     for code in codes:
         if code in lang_emojis and code not in target_codes:
             target_codes.append(code)
-    # Build display list
     st.session_state["target_disp"] = [f"{lang_emojis[c]} {c}" for c in target_codes]
 
 # --- Reset callback ---
 def reset_form():
-    # Clear inputs except GTS ID
-    for key in ['Title', 'Requested by', 'Reference Number', 'Requestor Email', 'HFM']:
+    for key in ['Title', 'Requested by', 'Reference Number',
+                'Requestor Email', 'HFM', 'raw_input']:
         st.session_state.pop(key, None)
     st.session_state.pop('target_disp', None)
     st.session_state.pop('content_type', None)
     for key in ['shared_name', 'workfront_name', 'wordbee_list',
                 'aem_list', 'result_df', 'generated', 'warning']:
         st.session_state.pop(key, None)
-    st.session_state.pop('raw_input', None)
 
-# Reset button
 st.button("🔄 Reset Form", on_click=reset_form)
 
 # --- Input Form ---
 with st.form(key='input_form'):
     st.subheader("🔤 Input Details")
-
-    # These will pick up session_state defaults if set above
     st.text_input("Title", key='Title')
     st.text_input("GTS ID", value="GTS2500", key='GTS ID')
     st.text_input("Requested by", key='Requested by')
@@ -103,7 +98,6 @@ with st.form(key='input_form'):
     st.text_input("Requestor Email", key='Requestor Email')
     st.text_input("HFM", key='HFM')
 
-    # Language & Content Type
     display_options = [f"{emoji} {code}" for code, emoji in sorted(LANGUAGE_OPTIONS)]
     st.multiselect("Target Language(s)", display_options, key='target_disp')
     st.multiselect("Content Type", ["Marketing", "Product"], key='content_type')
@@ -151,7 +145,6 @@ if submit:
         req = st.session_state['Requested by']
         ref = st.session_state['Reference Number']
         ct = st.session_state.get('content_type', [])
-        # pull codes back out of the display strings
         langs = [d.split()[1] for d in st.session_state.get('target_disp', [])]
 
         shared = build_shared(gid, req)
@@ -168,7 +161,6 @@ if submit:
             'warning': False
         })
 
-        # Build table
         data = {
             'Field': [
                 'Title','GTS ID','Requested by','Reference Number',
@@ -236,7 +228,6 @@ if st.session_state['generated']:
         use_container_width=True
     )
 
-    # Download Excel
     buf = BytesIO()
     with pd.ExcelWriter(buf, engine='xlsxwriter') as w:
         st.session_state['result_df'].to_excel(
