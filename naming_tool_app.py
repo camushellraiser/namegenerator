@@ -4,7 +4,21 @@ import re
 from io import BytesIO
 
 # -----------------------------------------------------------------------------
-# App configuration
+# 0) Reset button at the very top
+if st.button("🔄 Reset Form"):
+    for k in [
+        'parsed','raw_input',
+        'Title','Requested by','Reference Number',
+        'Requestor Email','HFM',
+        'target_disp','content_type',
+        'shared_name','workfront_name','wordbee_list',
+        'aem_list','result_df','generated','warning'
+    ]:
+        st.session_state.pop(k, None)
+    st.stop()  # stop this run, so next render is fully fresh
+
+# -----------------------------------------------------------------------------
+# 1) App configuration
 st.set_page_config(page_title="Naming Convention Generator", layout="centered")
 st.title("🧩 Naming Convention Generator")
 st.markdown("""
@@ -17,7 +31,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# Language options and emoji map
+# 2) Language options and emoji map
 LANGUAGE_OPTIONS = [
     ("BR", "🇧🇷"), ("CN", "🇨🇳"), ("DE", "🇩🇪"), ("ES", "🇪🇸"),
     ("FR", "🇫🇷"), ("JP", "🇯🇵"), ("KR", "🇰🇷"), ("TW", "🇹🇼"),
@@ -25,13 +39,13 @@ LANGUAGE_OPTIONS = [
 lang_emojis = {code: emoji for code, emoji in LANGUAGE_OPTIONS}
 
 # -----------------------------------------------------------------------------
-# Initialize session state flags
+# 3) Initialize session state flags
 for flag in ('parsed', 'generated', 'warning'):
     if flag not in st.session_state:
         st.session_state[flag] = False
 
 # -----------------------------------------------------------------------------
-# 1) Paste-and-parse area (runs once per paste)
+# 4) Paste-and-parse area (runs once per paste)
 raw = st.text_area(
     "📋 Paste full Issue/Workfront page content here:",
     key="raw_input",
@@ -39,38 +53,33 @@ raw = st.text_area(
 )
 
 if raw and not st.session_state.parsed:
-    # ── Title: capture every line after each "Issue", take the last one
+    # Title: take the last non-empty line after each "Issue"
     titles = re.findall(r"Issue\s*\n([^\n]+)", raw)
     good = [t.strip() for t in titles if t.strip().lower() != "issue"]
     if good:
         st.session_state.Title = good[-1]
 
-    # ── Reference Number
-    m = re.search(r"Reference Number\s*\n(\d+)", raw)
-    if m:
+    # Reference Number
+    if m := re.search(r"Reference Number\s*\n(\d+)", raw):
         st.session_state["Reference Number"] = m.group(1).strip()
 
-    # ── Requested by
-    m = re.search(r"Requested by\s*\n(.+)", raw)
-    if m:
+    # Requested by
+    if m := re.search(r"Requested by\s*\n(.+)", raw):
         st.session_state["Requested by"] = m.group(1).strip()
 
-    # ── Requestor Email
-    m = re.search(r"Requestor Email\s*\n(\S+@\S+)", raw)
-    if m:
+    # Requestor Email
+    if m := re.search(r"Requestor Email\s*\n(\S+@\S+)", raw):
         st.session_state["Requestor Email"] = m.group(1).strip()
 
-    # ── HFM Entity Code
-    m = re.search(r"HFM Entity Code\s*\n(.+)", raw)
-    if m:
+    # HFM Entity Code
+    if m := re.search(r"HFM Entity Code\s*\n(.+)", raw):
         st.session_state.HFM = m.group(1).strip()
 
-    # ── Content Type
-    m = re.search(r"Content to be translated\*\s*\n([^\n]+)", raw)
-    if m:
+    # Content Type
+    if m := re.search(r"Content to be translated\*\s*\n([^\n]+)", raw):
         st.session_state.content_type = [c.strip() for c in m.group(1).split(",")]
 
-    # ── Target languages
+    # Target languages
     codes = re.findall(r"\b([A-Z]{2})\b(?=\s*-\s*[A-Za-z])", raw)
     seen = []
     for c in codes:
@@ -81,22 +90,7 @@ if raw and not st.session_state.parsed:
     st.session_state.parsed = True
 
 # -----------------------------------------------------------------------------
-# Reset callback: clear everything
-def reset_form():
-    for k in [
-        'parsed','raw_input',
-        'Title','Requested by','Reference Number',
-        'Requestor Email','HFM',
-        'target_disp','content_type',
-        'shared_name','workfront_name','wordbee_list',
-        'aem_list','result_df','generated','warning'
-    ]:
-        st.session_state.pop(k, None)
-
-st.button("🔄 Reset Form", on_click=reset_form)
-
-# -----------------------------------------------------------------------------
-# 2) Input form
+# 5) Input form
 with st.form("input_form"):
     st.subheader("🔤 Input Details")
     st.text_input("Title", key="Title")
@@ -113,7 +107,7 @@ with st.form("input_form"):
     submit = st.form_submit_button("🚀 Generate Names")
 
 # -----------------------------------------------------------------------------
-# 3) Name-builder helpers
+# 6) Name-builder helpers
 def get_initial_lastname(full_name: str) -> str:
     parts = full_name.strip().split()
     return (parts[0][0] + parts[-1]) if len(parts) >= 2 else (parts[0] if parts else "")
@@ -139,7 +133,7 @@ def build_aem_list(shared, title, langs, ct):
     return [f"{base}_{l}" for l in langs] if langs else [base]
 
 # -----------------------------------------------------------------------------
-# 4) Generate logic
+# 7) Generate logic
 if submit:
     required = all([
         st.session_state.get("Title"),
@@ -198,7 +192,7 @@ if submit:
         st.session_state.result_df = pd.DataFrame(data)
 
 # -----------------------------------------------------------------------------
-# 5) Display / Download
+# 8) Display / Download
 if st.session_state.warning:
     st.warning("Complete all required fields to generate names.")
 
