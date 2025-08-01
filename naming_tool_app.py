@@ -4,21 +4,7 @@ import re
 from io import BytesIO
 
 # -----------------------------------------------------------------------------
-# 0) Reset button at the very top
-if st.button("🔄 Reset Form"):
-    for k in [
-        'parsed','raw_input',
-        'Title','Requested by','Reference Number',
-        'Requestor Email','HFM',
-        'target_disp','content_type',
-        'shared_name','workfront_name','wordbee_list',
-        'aem_list','result_df','generated','warning'
-    ]:
-        st.session_state.pop(k, None)
-    st.stop()  # stop this run, so next render is fully fresh
-
-# -----------------------------------------------------------------------------
-# 1) App configuration
+# App configuration
 st.set_page_config(page_title="Naming Convention Generator", layout="centered")
 st.title("🧩 Naming Convention Generator")
 st.markdown("""
@@ -31,7 +17,24 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
-# 2) Language options and emoji map
+# Reset callback: clear state & rerun
+def reset_form():
+    keys = [
+        'parsed','raw_input',
+        'Title','Requested by','Reference Number',
+        'Requestor Email','HFM',
+        'target_disp','content_type',
+        'shared_name','workfront_name','wordbee_list',
+        'aem_list','result_df','generated','warning'
+    ]
+    for k in keys:
+        st.session_state.pop(k, None)
+    st.experimental_rerun()
+
+st.button("🔄 Reset Form", on_click=reset_form)
+
+# -----------------------------------------------------------------------------
+# Language options and emoji map
 LANGUAGE_OPTIONS = [
     ("BR", "🇧🇷"), ("CN", "🇨🇳"), ("DE", "🇩🇪"), ("ES", "🇪🇸"),
     ("FR", "🇫🇷"), ("JP", "🇯🇵"), ("KR", "🇰🇷"), ("TW", "🇹🇼"),
@@ -39,13 +42,13 @@ LANGUAGE_OPTIONS = [
 lang_emojis = {code: emoji for code, emoji in LANGUAGE_OPTIONS}
 
 # -----------------------------------------------------------------------------
-# 3) Initialize session state flags
-for flag in ('parsed', 'generated', 'warning'):
+# Initialize session-state flags
+for flag in ('parsed','generated','warning'):
     if flag not in st.session_state:
         st.session_state[flag] = False
 
 # -----------------------------------------------------------------------------
-# 4) Paste-and-parse area (runs once per paste)
+# 1) Paste-and-parse (only once per new paste)
 raw = st.text_area(
     "📋 Paste full Issue/Workfront page content here:",
     key="raw_input",
@@ -53,9 +56,9 @@ raw = st.text_area(
 )
 
 if raw and not st.session_state.parsed:
-    # Title: take the last non-empty line after each "Issue"
+    # Title: last non-empty line after each "Issue"
     titles = re.findall(r"Issue\s*\n([^\n]+)", raw)
-    good = [t.strip() for t in titles if t.strip().lower() != "issue"]
+    good   = [t.strip() for t in titles if t.strip().lower() != "issue"]
     if good:
         st.session_state.Title = good[-1]
 
@@ -75,7 +78,7 @@ if raw and not st.session_state.parsed:
     if m := re.search(r"HFM Entity Code\s*\n(.+)", raw):
         st.session_state.HFM = m.group(1).strip()
 
-    # Content Type
+    # Content types
     if m := re.search(r"Content to be translated\*\s*\n([^\n]+)", raw):
         st.session_state.content_type = [c.strip() for c in m.group(1).split(",")]
 
@@ -90,7 +93,7 @@ if raw and not st.session_state.parsed:
     st.session_state.parsed = True
 
 # -----------------------------------------------------------------------------
-# 5) Input form
+# 2) Input form
 with st.form("input_form"):
     st.subheader("🔤 Input Details")
     st.text_input("Title", key="Title")
@@ -107,7 +110,7 @@ with st.form("input_form"):
     submit = st.form_submit_button("🚀 Generate Names")
 
 # -----------------------------------------------------------------------------
-# 6) Name-builder helpers
+# Helper functions
 def get_initial_lastname(full_name: str) -> str:
     parts = full_name.strip().split()
     return (parts[0][0] + parts[-1]) if len(parts) >= 2 else (parts[0] if parts else "")
@@ -133,15 +136,15 @@ def build_aem_list(shared, title, langs, ct):
     return [f"{base}_{l}" for l in langs] if langs else [base]
 
 # -----------------------------------------------------------------------------
-# 7) Generate logic
+# 3) Generate
 if submit:
-    required = all([
+    valid = all([
         st.session_state.get("Title"),
         st.session_state.get("GTS ID"),
         st.session_state.get("Requested by"),
         st.session_state.get("Reference Number")
     ])
-    if not required:
+    if not valid:
         st.session_state.generated = False
         st.session_state.warning = True
     else:
@@ -166,7 +169,7 @@ if submit:
             "warning": False
         })
 
-        # build DataFrame
+        # Build dataframe
         data = {
             "Field": [
                 "Title","GTS ID","Requested by","Reference Number",
@@ -192,7 +195,7 @@ if submit:
         st.session_state.result_df = pd.DataFrame(data)
 
 # -----------------------------------------------------------------------------
-# 8) Display / Download
+# 4) Display & Download
 if st.session_state.warning:
     st.warning("Complete all required fields to generate names.")
 
