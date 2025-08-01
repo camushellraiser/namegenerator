@@ -81,7 +81,7 @@ if raw and not st.session_state.parsed:
     st.session_state.parsed = True
 
 # -----------------------------------------------------------------------------
-# Reset callback: clear everything and rerun
+# Reset callback: clear everything
 def reset_form():
     for k in [
         'parsed','raw_input',
@@ -92,7 +92,6 @@ def reset_form():
         'aem_list','result_df','generated','warning'
     ]:
         st.session_state.pop(k, None)
-    st.experimental_rerun()
 
 st.button("🔄 Reset Form", on_click=reset_form)
 
@@ -152,21 +151,18 @@ if submit:
         st.session_state.generated = False
         st.session_state.warning = True
     else:
-        # prepare inputs
-        ttl = st.session_state.Title
-        gid = st.session_state["GTS ID"]
-        req = st.session_state["Requested by"]
-        ref = st.session_state["Reference Number"]
-        ct  = st.session_state.get("content_type", [])
+        ttl   = st.session_state.Title
+        gid   = st.session_state["GTS ID"]
+        req   = st.session_state["Requested by"]
+        ref   = st.session_state["Reference Number"]
+        ct    = st.session_state.get("content_type", [])
         langs = [d.split()[1] for d in st.session_state.get("target_disp", [])]
 
-        # build names
         shared = build_shared(gid, req)
         work   = build_workfront(shared, ttl, ref)
         wbee   = build_wordbee_list(shared, ttl, langs, ct)
         aem    = build_aem_list(shared, ttl, langs, ct)
 
-        # stash in state
         st.session_state.update({
             "shared_name": shared,
             "workfront_name": work,
@@ -176,7 +172,7 @@ if submit:
             "warning": False
         })
 
-        # prepare DataFrame
+        # build DataFrame
         data = {
             "Field": [
                 "Title","GTS ID","Requested by","Reference Number",
@@ -191,12 +187,10 @@ if submit:
                 shared, work
             ]
         }
-        # add AEM rows
         for n in aem:
             code = n.split("_")[-1]
             data["Field"].append(f"AEM Name - {code}")
             data["Value"].append(n)
-        # add Wordbee row
         for n in wbee:
             data["Field"].append("Wordbee Name")
             data["Value"].append(n)
@@ -212,7 +206,6 @@ if st.session_state.generated:
     st.markdown("---")
     st.subheader("📛 Generated Names")
 
-    # always re-derive these for display
     langs = [d.split()[1] for d in st.session_state.get("target_disp", [])]
     ct    = st.session_state.get("content_type", [])
 
@@ -242,14 +235,12 @@ if st.session_state.generated:
         st.text(f"Content Type:              {', '.join(ct)}")
         st.text(f"Generated Name:            {s.workfront_name}")
 
-    # show table
     st.dataframe(
         st.session_state.result_df
           .style.set_properties(**{"font-size":"15px"}),
         use_container_width=True
     )
 
-    # Excel download
     buf = BytesIO()
     with pd.ExcelWriter(buf, engine="xlsxwriter") as writer:
         st.session_state.result_df.to_excel(writer, index=False, sheet_name="Naming Results")
