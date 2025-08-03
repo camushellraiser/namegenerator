@@ -10,6 +10,18 @@ st.set_page_config(page_title="Naming Convention Generator", layout="centered")
 st.title("🧩 Naming Convention Generator")
 
 # -----------------------------------------------------------------------------
+# Reset (centered, outside form)
+st.markdown(
+    """
+    <div style='text-align:center; margin:10px;'>
+        <button onclick='window.location.reload();' 
+                style='padding:8px 16px; font-size:16px; border-radius:4px;'>🔄 Reset Form</button>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# -----------------------------------------------------------------------------
 # Language options and emoji map
 LANGUAGE_OPTIONS = [
     ("BR", "🇧🇷"), ("CN", "🇨🇳"), ("DE", "🇩🇪"), ("ES", "🇪🇸"),
@@ -34,7 +46,7 @@ raw = st.text_area(
 if raw and not st.session_state.parsed:
     # Title: last non-empty line after each "Issue"
     titles = re.findall(r"Issue\s*\n([^\n]+)", raw)
-    good   = [t.strip() for t in titles if t.strip().lower() != "issue"]
+    good = [t.strip() for t in titles if t.strip().lower() != "issue"]
     if good:
         st.session_state.Title = good[-1]
 
@@ -69,7 +81,7 @@ if raw and not st.session_state.parsed:
     st.session_state.parsed = True
 
 # -----------------------------------------------------------------------------
-# 2) Input form with Generate and Reset (browser refresh)
+# 2) Input form with only Generate button
 with st.form("input_form"):
     st.subheader("🔤 Input Details")
     st.text_input("Title", key="Title")
@@ -83,15 +95,7 @@ with st.form("input_form"):
     st.multiselect("Target Language(s)", display_opts, key="target_disp")
     st.multiselect("Content Type", ["Marketing", "Product"], key="content_type")
 
-    # Layout for buttons
-    col1, col2 = st.columns([3,1])
-    with col1:
-        generate = st.form_submit_button("🚀 Generate Names")
-    with col2:
-        # Browser-level reset via JS refresh
-        html("<button onclick='window.location.href=window.location.href' "
-             "style='width:100%;padding:8px;font-size:16px;border-radius:4px;'>🔄 Reset</button>",
-             height=40)
+    generate = st.form_submit_button("🚀 Generate Names")
 
 # -----------------------------------------------------------------------------
 # Helper functions
@@ -110,7 +114,7 @@ def build_wordbee_list(shared, title, langs, ct):
     base = f"{shared}_{title}"
     sy = []
     if 'Marketing' in ct: sy.append('AEM')
-    if 'Product'   in ct: sy.append('Iris')
+    if 'Product' in ct: sy.append('Iris')
     if sy: base += '_' + '_'.join(sy)
     return [f"{base}_{langs[0]}"] if len(langs)==1 else [base] if langs else [base]
 
@@ -133,17 +137,17 @@ if generate:
         st.session_state.generated = False
         st.session_state.warning = True
     else:
-        ttl   = st.session_state.Title
-        gid   = st.session_state["GTS ID"]
-        req   = st.session_state["Requested by"]
-        ref   = st.session_state["Reference Number"]
-        ct    = st.session_state.get("content_type", [])
+        ttl = st.session_state.Title
+        gid = st.session_state["GTS ID"]
+        req = st.session_state["Requested by"]
+        ref = st.session_state["Reference Number"]
+        ct = st.session_state.get("content_type", [])
         langs = [d.split()[1] for d in st.session_state.get("target_disp", [])]
 
         shared = build_shared(gid, req)
-        work   = build_workfront(shared, ttl, ref)
-        wbee   = build_wordbee_list(shared, ttl, langs, ct)
-        aem    = build_aem_list(shared, ttl, langs, ct)
+        work = build_workfront(shared, ttl, ref)
+        wbee = build_wordbee_list(shared, ttl, langs, ct)
+        aem = build_aem_list(shared, ttl, langs, ct)
 
         st.session_state.update({
             "shared_name": shared,
@@ -189,7 +193,7 @@ if st.session_state.generated:
     st.subheader("📛 Generated Names")
 
     langs = [d.split()[1] for d in st.session_state.get("target_disp", [])]
-    ct    = st.session_state.get("content_type", [])
+    ct = st.session_state.get("content_type", [])
 
     st.markdown("#### 📚 GTS Shared Library Name")
     st.code(st.session_state.shared_name, language="none")
