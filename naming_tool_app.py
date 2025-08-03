@@ -10,15 +10,17 @@ st.set_page_config(page_title="Naming Convention Generator", layout="centered")
 st.title("🧩 Naming Convention Generator")
 
 # -----------------------------------------------------------------------------
-# Reset (centered, outside form)
-st.markdown(
+# Reset button: full browser reload
+html(
     """
-    <div style='text-align:center; margin:10px;'>
-        <button onclick='window.location.reload();' 
-                style='padding:8px 16px; font-size:16px; border-radius:4px;'>🔄 Reset Form</button>
+    <script>
+      function resetApp() { window.location.reload(true); }
+    </script>
+    <div style='text-align:center; margin:16px 0;'>
+      <button onclick='resetApp()' style='padding:8px 16px; font-size:16px; border:none; border-radius:4px; background-color:#eee; cursor:pointer;'>🔄 Reset Form</button>
     </div>
     """,
-    unsafe_allow_html=True
+    height=80,
 )
 
 # -----------------------------------------------------------------------------
@@ -81,7 +83,7 @@ if raw and not st.session_state.parsed:
     st.session_state.parsed = True
 
 # -----------------------------------------------------------------------------
-# 2) Input form with only Generate button
+# 2) Input form
 with st.form("input_form"):
     st.subheader("🔤 Input Details")
     st.text_input("Title", key="Title")
