@@ -2,21 +2,26 @@ import streamlit as st
 import pandas as pd
 import re
 from io import BytesIO
+from streamlit.components.v1 import html
 
 # -----------------------------------------------------------------------------
 # App configuration
 st.set_page_config(page_title="Naming Convention Generator", layout="centered")
-st.title("🧩 Naming Convention Generator")
-st.info("🔄 To completely clear the form, please refresh your browser (F5).")
 
-st.markdown("""
-<style>
-    .stTextInput>div>div>input { font-size: 16px; }
-    .stMultiSelect>div>div>div>div { font-size: 16px; }
-    .stMarkdown h3 { color: #a30000; }
-    .generated-table td { font-size: 15px !important; }
-</style>
-""", unsafe_allow_html=True)
+# Custom Reset button that triggers a full page reload (F5 equivalent)
+st.markdown(
+    """
+    <div style='margin:20px 0;'>
+        <button
+            style='font-size:16px;padding:8px 16px;border-radius:6px;border:1px solid #ccc;background:#f9f9f9;cursor:pointer;'
+            onclick='window.location.reload();'
+        >🔄 Reset Form</button>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+st.title("🧩 Naming Convention Generator")
 
 # -----------------------------------------------------------------------------
 # Language options and emoji map
@@ -28,15 +33,12 @@ lang_emojis = {code: emoji for code, emoji in LANGUAGE_OPTIONS}
 
 # -----------------------------------------------------------------------------
 # Session-state flags
-if 'parsed' not in st.session_state:
-    st.session_state.parsed = False
-if 'generated' not in st.session_state:
-    st.session_state.generated = False
-if 'warning' not in st.session_state:
-    st.session_state.warning = False
+for flag in ('parsed','generated','warning'):
+    if flag not in st.session_state:
+        st.session_state[flag] = False
 
 # -----------------------------------------------------------------------------
-# 1) Paste-and-parse area
+# 1) Paste-and-parse area (runs once per page load)
 raw = st.text_area(
     "📋 Paste full Issue/Workfront page content here:",
     key="raw_input",
@@ -44,7 +46,7 @@ raw = st.text_area(
 )
 
 if raw and not st.session_state.parsed:
-    # Title
+    # Title: last non-empty line after each "Issue"
     titles = re.findall(r"Issue\s*\n([^\n]+)", raw)
     good   = [t.strip() for t in titles if t.strip().lower() != "issue"]
     if good:
@@ -99,6 +101,7 @@ with st.form("input_form"):
 
 # -----------------------------------------------------------------------------
 # Helper functions
+
 def get_initial_lastname(full_name: str) -> str:
     parts = full_name.strip().split()
     return (parts[0][0] + parts[-1]) if len(parts) >= 2 else (parts[0] if parts else "")
@@ -124,15 +127,15 @@ def build_aem_list(shared, title, langs, ct):
     return [f"{base}_{l}" for l in langs] if langs else [base]
 
 # -----------------------------------------------------------------------------
-# 3) Generate
+# 3) Generate logic
 if submit:
-    required = all([
+    valid = all([
         st.session_state.get("Title"),
         st.session_state.get("GTS ID"),
         st.session_state.get("Requested by"),
         st.session_state.get("Reference Number")
     ])
-    if not required:
+    if not valid:
         st.session_state.generated = False
         st.session_state.warning = True
     else:
