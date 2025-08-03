@@ -2,25 +2,10 @@ import streamlit as st
 import pandas as pd
 import re
 from io import BytesIO
-from streamlit.components.v1 import html
 
 # -----------------------------------------------------------------------------
 # App configuration
 st.set_page_config(page_title="Naming Convention Generator", layout="centered")
-
-# Custom Reset button that triggers a full page reload (F5 equivalent)
-st.markdown(
-    """
-    <div style='margin:20px 0;'>
-        <button
-            style='font-size:16px;padding:8px 16px;border-radius:6px;border:1px solid #ccc;background:#f9f9f9;cursor:pointer;'
-            onclick='window.location.reload();'
-        >🔄 Reset Form</button>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
 st.title("🧩 Naming Convention Generator")
 
 # -----------------------------------------------------------------------------
@@ -33,7 +18,7 @@ lang_emojis = {code: emoji for code, emoji in LANGUAGE_OPTIONS}
 
 # -----------------------------------------------------------------------------
 # Session-state flags
-for flag in ('parsed','generated','warning'):
+for flag in ('parsed', 'generated', 'warning'):
     if flag not in st.session_state:
         st.session_state[flag] = False
 
@@ -98,6 +83,20 @@ with st.form("input_form"):
     st.multiselect("Content Type", ["Marketing", "Product"], key="content_type")
 
     submit = st.form_submit_button("🚀 Generate Names")
+
+# Place Reset button to the right of Generate
+col1, col2 = st.columns([3,1])
+with col2:
+    if st.button("🔄 Reset Form"):
+        for k in [
+            'parsed','raw_input','Title','Requested by',
+            'Reference Number','Requestor Email','HFM',
+            'target_disp','content_type','shared_name',
+            'workfront_name','wordbee_list','aem_list',
+            'result_df','generated','warning'
+        ]:
+            st.session_state.pop(k, None)
+        st.experimental_rerun()
 
 # -----------------------------------------------------------------------------
 # Helper functions
