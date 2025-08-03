@@ -68,7 +68,7 @@ if raw and not st.session_state.parsed:
     st.session_state.parsed = True
 
 # -----------------------------------------------------------------------------
-# 2) Input form
+# 2) Input form with Generate and Reset
 with st.form("input_form"):
     st.subheader("🔤 Input Details")
     st.text_input("Title", key="Title")
@@ -82,21 +82,24 @@ with st.form("input_form"):
     st.multiselect("Target Language(s)", display_opts, key="target_disp")
     st.multiselect("Content Type", ["Marketing", "Product"], key="content_type")
 
-    submit = st.form_submit_button("🚀 Generate Names")
+    # Buttons: Generate and Reset side by side
+    col_gen, col_reset = st.columns([3,1])
+    with col_gen:
+        generate = st.form_submit_button("🚀 Generate Names")
+    with col_reset:
+        reset = st.form_submit_button("🔄 Reset Form")
 
-# Place Reset button to the right of Generate
-col1, col2 = st.columns([3,1])
-with col2:
-    if st.button("🔄 Reset Form"):
-        for k in [
-            'parsed','raw_input','Title','Requested by',
-            'Reference Number','Requestor Email','HFM',
-            'target_disp','content_type','shared_name',
-            'workfront_name','wordbee_list','aem_list',
-            'result_df','generated','warning'
-        ]:
-            st.session_state.pop(k, None)
-        st.experimental_rerun()
+# Handle Reset: clear state and skip generation
+if reset:
+    for k in [
+        'parsed','raw_input','Title','Requested by',
+        'Reference Number','Requestor Email','HFM',
+        'target_disp','content_type','shared_name',
+        'workfront_name','wordbee_list','aem_list',
+        'result_df','generated','warning'
+    ]:
+        st.session_state.pop(k, None)
+    # no further actions; UI will refresh with cleared fields
 
 # -----------------------------------------------------------------------------
 # Helper functions
@@ -126,8 +129,8 @@ def build_aem_list(shared, title, langs, ct):
     return [f"{base}_{l}" for l in langs] if langs else [base]
 
 # -----------------------------------------------------------------------------
-# 3) Generate logic
-if submit:
+# 3) Generation logic
+if generate and not reset:
     valid = all([
         st.session_state.get("Title"),
         st.session_state.get("GTS ID"),
@@ -186,10 +189,10 @@ if submit:
 
 # -----------------------------------------------------------------------------
 # 4) Display & Download
-if st.session_state.warning:
+if st.session_state.warning and not generate:
     st.warning("Complete all required fields to generate names.")
 
-if st.session_state.generated:
+if st.session_state.generated and not reset:
     st.markdown("---")
     st.subheader("📛 Generated Names")
 
