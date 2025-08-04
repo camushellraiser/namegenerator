@@ -138,4 +138,4 @@ if st.button('🔄 Reset Form'):
     for k in list(st.session_state.keys()):
         del st.session_state[k]
     # Trigger a rerun using the proper Streamlit API
-    st.experimental.rerun()
+    st.experimental_rerun()
