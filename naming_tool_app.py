@@ -9,6 +9,14 @@ st.set_page_config(page_title="Naming Convention Generator", layout="centered")
 st.title("🧩 Naming Convention Generator")
 
 # -----------------------------------------------------------------------------
+# Global language options and emoji map
+LANGUAGE_OPTIONS = [
+    ("BR", "🇧🇷"), ("CN", "🇨🇳"), ("DE", "🇩🇪"), ("ES", "🇪🇸"),
+    ("FR", "🇫🇷"), ("JP", "🇯🇵"), ("KR", "🇰🇷"), ("TW", "🇹🇼"),
+]
+lang_emojis = {code: emoji for code, emoji in LANGUAGE_OPTIONS}
+
+# -----------------------------------------------------------------------------
 # Initialize session state flags
 def init_flag(key):
     if key not in st.session_state:
