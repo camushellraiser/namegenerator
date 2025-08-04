@@ -134,6 +134,8 @@ if st.session_state.generated:
 # -----------------------------------------------------------------------------
 # 5) Reset Form button at bottom
 if st.button('🔄 Reset Form'):
+    # Clear all user-filled state and reload script
     for k in list(st.session_state.keys()):
         del st.session_state[k]
-    st.experimental_rerun()
+    # Trigger a rerun using the proper Streamlit API
+    st.experimental.rerun()
