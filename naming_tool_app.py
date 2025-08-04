@@ -2,22 +2,11 @@ import streamlit as st
 import pandas as pd
 import re
 from io import BytesIO
+from streamlit.components.v1 import html
 
 # -----------------------------------------------------------------------------
-# App configuration and Reset
+# App configuration (no top reset)
 st.set_page_config(page_title="Naming Convention Generator", layout="centered")
-# Reset button: full browser refresh
-st.markdown(
-    """
-    <div style='text-align:center; margin:16px;'>
-        <a href=''>
-            <button style='padding:8px 16px; font-size:16px; border:none; border-radius:4px; background:#eee; cursor:pointer;'>🔄 Reset Form</button>
-        </a>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
 st.title("🧩 Naming Convention Generator")
 
 # -----------------------------------------------------------------------------
@@ -41,34 +30,21 @@ raw = st.text_area(
     key="raw_input",
     height=200
 )
-
 if raw and not st.session_state.parsed:
-    # Title extractor
     titles = re.findall(r"Issue\s*\n([^\n]+)", raw)
     good = [t.strip() for t in titles if t.strip().lower() != "issue"]
     if good:
-        st.session_state.Title = good[-1]
-    # Reference Number
+        st.session_state['Title'] = good[-1]
     m = re.search(r"Reference Number\s*\n(\d+)", raw)
-    if m:
-        st.session_state['Reference Number'] = m.group(1).strip()
-    # Requested by
+    if m: st.session_state['Reference Number'] = m.group(1).strip()
     m = re.search(r"Requested by\s*\n(.+)", raw)
-    if m:
-        st.session_state['Requested by'] = m.group(1).strip()
-    # Requestor Email
+    if m: st.session_state['Requested by'] = m.group(1).strip()
     m = re.search(r"Requestor Email\s*\n(\S+@\S+)", raw)
-    if m:
-        st.session_state['Requestor Email'] = m.group(1).strip()
-    # HFM Entity Code
+    if m: st.session_state['Requestor Email'] = m.group(1).strip()
     m = re.search(r"HFM Entity Code\s*\n(.+)", raw)
-    if m:
-        st.session_state['HFM'] = m.group(1).strip()
-    # Content types
+    if m: st.session_state['HFM'] = m.group(1).strip()
     m = re.search(r"Content to be translated\*\s*\n([^\n]+)", raw)
-    if m:
-        st.session_state['content_type'] = [c.strip() for c in m.group(1).split(",")]
-    # Target languages
+    if m: st.session_state['content_type'] = [c.strip() for c in m.group(1).split(",")]
     codes = re.findall(r"\b([A-Z]{2})\b(?=\s*-\s*[A-Za-z])", raw)
     seen = []
     for c in codes:
@@ -93,7 +69,19 @@ with st.form("input_form"):
     generate = st.form_submit_button("🚀 Generate Names")
 
 # -----------------------------------------------------------------------------
+# 3) Reset button placed below form, centered
+html(
+    """
+    <div style='text-align:center; margin:20px;'>
+        <button onclick='window.location.reload()' style='padding:8px 16px; font-size:16px; border:none; border-radius:4px; background:#eee; cursor:pointer;'>🔄 Reset Form</button>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# -----------------------------------------------------------------------------
 # Helper functions
+
 def get_initial_lastname(full_name: str) -> str:
     parts = full_name.strip().split()
     return (parts[0][0] + parts[-1]) if len(parts) >= 2 else (parts[0] if parts else "")
@@ -113,13 +101,12 @@ def build_wordbee_list(shared, title, langs, ct):
     return [f"{base}_{langs[0]}"] if len(langs) == 1 else [base] if langs else [base]
 
 def build_aem_list(shared, title, langs, ct):
-    if 'Marketing' not in ct:
-        return []
+    if 'Marketing' not in ct: return []
     base = f"{shared}_{title}_AEM"
     return [f"{base}_{l}" for l in langs] if langs else [base]
 
 # -----------------------------------------------------------------------------
-# 3) Generation logic
+# 4) Generation logic
 if generate:
     if not all([st.session_state.get('Title'), st.session_state.get('GTS ID'), st.session_state.get('Requested by'), st.session_state.get('Reference Number')]):
         st.session_state.generated = False
@@ -157,7 +144,7 @@ if generate:
         st.session_state['result_df'] = pd.DataFrame(data)
 
 # -----------------------------------------------------------------------------
-# 4) Display & Download
+# 5) Display & Download
 if st.session_state.warning and not st.session_state.generated:
     st.warning("Complete all required fields to generate names.")
 if st.session_state.generated:
