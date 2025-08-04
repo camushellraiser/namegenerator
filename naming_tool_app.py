@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import re
 from io import BytesIO
-from streamlit.components.v1 import html
+
 
 # -----------------------------------------------------------------------------
 # App configuration (no top reset)
@@ -69,15 +69,7 @@ with st.form("input_form"):
     generate = st.form_submit_button("🚀 Generate Names")
 
 # -----------------------------------------------------------------------------
-# 3) Reset button placed below form, centered
-html(
-    """
-    <div style='text-align:center; margin:20px;'>
-        <button onclick='window.location.reload()' style='padding:8px 16px; font-size:16px; border:none; border-radius:4px; background:#eee; cursor:pointer;'>🔄 Reset Form</button>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# 3) No inline HTML reset here; will render at bottom to use st.markdown
 
 # -----------------------------------------------------------------------------
 # Helper functions
