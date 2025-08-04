@@ -42,7 +42,6 @@ if raw and not st.session_state.parsed:
     if m: st.session_state['HFM'] = m.group(1)
     m = re.search(r"Content to be translated\*\s*\n([^\n]+)", raw)
     if m: st.session_state['content_type'] = [c.strip() for c in m.group(1).split(',')]
-    # Target languages (global mapping)
     codes = re.findall(r"\b([A-Z]{2})\b(?=\s*-\s*[A-Za-z])", raw)
     seen = []
     for c in codes:
@@ -73,9 +72,8 @@ with st.form('input_form'):
         st.markdown('<meta http-equiv="refresh" content="0">', unsafe_allow_html=True)
         st.stop()
 
-# -----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 # Helper functions
-
 def get_initial_lastname(full_name: str) -> str:
     parts = full_name.strip().split()
     return (parts[0][0] + parts[-1]) if len(parts) >= 2 else (parts[0] if parts else "")
@@ -147,6 +145,9 @@ if generate:
 if st.session_state.generated:
     st.markdown('---')
     st.subheader('📛 Generated Names')
+    # Recompute for display
+    langs = [d.split()[1] for d in st.session_state.get('target_disp', [])]
+    ct = st.session_state.get('content_type', [])
     st.markdown('#### 📚 GTS Shared Library Name')
     st.code(st.session_state['shared_name'], language='none')
     st.markdown('#### 🧾 Workfront Name')
@@ -181,3 +182,5 @@ if st.session_state.generated:
                        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 # -----------------------------------------------------------------------------
+# 5) Reset Form button inside form (moves with input)
+# Already handled above in form
