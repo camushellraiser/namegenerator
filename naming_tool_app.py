@@ -132,10 +132,8 @@ if st.session_state.generated:
     st.download_button('📥 Download as Excel',data=buf,file_name=f"{st.session_state['GTS ID']} Naming Convention.xlsx",mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 # -----------------------------------------------------------------------------
-# 5) Reset Form button near top of results (meta refresh)
-grid1, grid2, grid3 = st.columns([1,1,1])
-with grid2:
-    reset_clicked = st.button("🔁 Reset")
-if reset_clicked:
-    st.markdown('<meta http-equiv="refresh" content="0">', unsafe_allow_html=True)
-    st.stop()
+# 5) Reset Form
+if st.button("🔁 Reset"):  # Always visible reset button
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.experimental_rerun()  # Rerun the app to clear everything
