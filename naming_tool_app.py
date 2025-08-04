@@ -132,10 +132,10 @@ if st.session_state.generated:
     st.download_button('📥 Download as Excel',data=buf,file_name=f"{st.session_state['GTS ID']} Naming Convention.xlsx",mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 # -----------------------------------------------------------------------------
-# 5) Reset Form button at bottom
-if st.button('🔄 Reset Form'):
-    # Clear all user-filled state and reload script
-    for k in list(st.session_state.keys()):
-        del st.session_state[k]
-    # Trigger a rerun using the proper Streamlit API
-    st.experimental_rerun()
+# 5) Reset Form button near top of results (meta refresh)
+grid1, grid2, grid3 = st.columns([1,1,1])
+with grid2:
+    reset_clicked = st.button("🔁 Reset")
+if reset_clicked:
+    st.markdown('<meta http-equiv="refresh" content="0">', unsafe_allow_html=True)
+    st.stop()
