@@ -175,3 +175,16 @@ if st.session_state.generated:
         ws.set_column('B:B',70)
     buf.seek(0)
     st.download_button('📥 Download as Excel', data=buf, file_name=f"{st.session_state['GTS ID']} Naming Convention.xlsx", mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+# -----------------------------------------------------------------------------
+# Final: Reset Form button at bottom
+st.markdown(
+    """
+    <div style=\"text-align:center; margin-top:20px;\">
+        <button onclick=\"window.location.reload()\" style=\"padding:8px 16px; font-size:16px; border:none; border-radius:4px; background:#eee; cursor:pointer;\">
+            🔄 Reset Form
+        </button>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
